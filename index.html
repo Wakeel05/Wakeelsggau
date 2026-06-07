@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+        <style type="text/css">
+            * { box-sizing: border-box; }
+            body {
+                padding: 0px;
+                margin: 0px;
+                background: #1a1a1a;
+                overflow: hidden;
+                touch-action: none;
+                user-select: none;
+                -webkit-user-select: none;
+            }
+
+            #game-wrapper {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                width: 100vw;
+                height: 100vh;
+            }
+
+            #phaser-example {
+                display: block;
+                /* Phaser canvas will be here */
+            }
+
+            /* ── Mobile Controls ── */
+            #mobile-controls {
+                display: none;
+                width: 100%;
+                max-width: 621px;
+                padding: 10px 12px 6px;
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: flex-end;
+                gap: 8px;
+                flex-shrink: 0;
+            }
+
+            /* D-Pad */
+            #dpad {
+                position: relative;
+                width: 120px;
+                height: 120px;
+                flex-shrink: 0;
+            }
+
+            .dpad-btn {
+                position: absolute;
+                background: rgba(255,255,255,0.12);
+                border: 2px solid rgba(255,255,255,0.25);
+                border-radius: 6px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: rgba(255,255,255,0.8);
+                font-size: 18px;
+                font-family: sans-serif;
+                cursor: pointer;
+                -webkit-tap-highlight-color: transparent;
+                transition: background 0.05s, border-color 0.05s;
+                width: 38px;
+                height: 38px;
+            }
+
+            .dpad-btn.active {
+                background: rgba(255,200,0,0.35);
+                border-color: rgba(255,200,0,0.8);
+            }
+
+            #btn-up    { top: 0;   left: 50%; transform: translateX(-50%); }
+            #btn-down  { bottom: 0; left: 50%; transform: translateX(-50%); }
+            #btn-left  { left: 0;  top: 50%;  transform: translateY(-50%); }
+            #btn-right { right: 0; top: 50%;  transform: translateY(-50%); }
+
+            /* center cross piece */
+            #dpad-center {
+                position: absolute;
+                width: 38px;
+                height: 38px;
+                top: 50%; left: 50%;
+                transform: translate(-50%, -50%);
+                background: rgba(255,255,255,0.06);
+                border-radius: 4px;
+            }
+
+            /* Action Buttons */
+            #action-buttons {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                grid-template-rows: repeat(2, 1fr);
+                gap: 7px;
+                flex-shrink: 0;
+            }
+
+            .action-btn {
+                width: 52px;
+                height: 52px;
+                border-radius: 50%;
+                border: 2px solid;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 10px;
+                font-weight: bold;
+                font-family: 'Arial Narrow', Arial, sans-serif;
+                letter-spacing: 0.5px;
+                cursor: pointer;
+                -webkit-tap-highlight-color: transparent;
+                transition: opacity 0.05s, transform 0.05s;
+                color: #fff;
+                text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+            }
+
+            .action-btn:active, .action-btn.active {
+                opacity: 0.6;
+                transform: scale(0.92);
+            }
+
+            /* Punch buttons — top row */
+            #btn-lp { background: rgba(70,130,220,0.5);  border-color: #4682dc; }
+            #btn-mp { background: rgba(220,130,40,0.5);  border-color: #dc8228; }
+            #btn-fp { background: rgba(220,60,60,0.5);   border-color: #dc3c3c; }
+
+            /* Kick buttons — bottom row */
+            #btn-lk { background: rgba(60,180,100,0.5);  border-color: #3cb464; }
+            #btn-mk { background: rgba(160,60,200,0.5);  border-color: #a03cc8; }
+            #btn-hk { background: rgba(200,180,30,0.5);  border-color: #c8b41e; }
+
+            /* Hadouken shortcut */
+            #hadouken-btn-wrap {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: flex-end;
+                gap: 4px;
+                flex-shrink: 0;
+            }
+
+            #btn-hadouken {
+                width: 60px;
+                height: 60px;
+                border-radius: 50%;
+                background: rgba(255, 100, 0, 0.55);
+                border: 2px solid #ff6400;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 9px;
+                font-weight: bold;
+                font-family: Arial, sans-serif;
+                color: #fff;
+                text-align: center;
+                letter-spacing: 0.3px;
+                cursor: pointer;
+                -webkit-tap-highlight-color: transparent;
+                transition: opacity 0.05s, transform 0.05s;
+                line-height: 1.2;
+                text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+            }
+
+            #btn-hadouken:active {
+                opacity: 0.6;
+                transform: scale(0.92);
+            }
+
+            #hadouken-label {
+                color: rgba(255,150,50,0.8);
+                font-size: 8px;
+                font-family: Arial, sans-serif;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+            }
+
+            @media (max-width: 640px) {
+                #mobile-controls {
+                    display: flex;
+                }
+            }
+
+            /* Scale canvas on small screens */
+            @media (max-width: 640px) {
+                #phaser-example canvas {
+                    width: 100vw !important;
+                    height: auto !important;
+                }
+            }
+        </style>
+        <script src="src/js/phaser.min.js"></script>
+        <script src="src/js/streetfightergame.js"></script>
+    </head>
+    <body>
+        <div id="game-wrapper">
+            <!-- Phaser mounts its canvas into body by default; wrapper handles layout -->
+            <div id="mobile-controls">
+
+                <!-- D-Pad (left) -->
+                <div id="dpad">
+                    <div class="dpad-btn" id="btn-up">▲</div>
+                    <div class="dpad-btn" id="btn-left">◀</div>
+                    <div id="dpad-center"></div>
+                    <div class="dpad-btn" id="btn-right">▶</div>
+                    <div class="dpad-btn" id="btn-down">▼</div>
+                </div>
+
+                <!-- Hadouken special (center) -->
+                <div id="hadouken-btn-wrap">
+                    <div id="btn-hadouken">🔥<br>HADOU-<br>KEN</div>
+                    <span id="hadouken-label">Special</span>
+                </div>
+
+                <!-- Action buttons (right) -->
+                <div id="action-buttons">
+                    <div class="action-btn" id="btn-lp">LP</div>
+                    <div class="action-btn" id="btn-mp">MP</div>
+                    <div class="action-btn" id="btn-fp">FP</div>
+                    <div class="action-btn" id="btn-lk">LK</div>
+                    <div class="action-btn" id="btn-mk">MK</div>
+                    <div class="action-btn" id="btn-hk">HK</div>
+                </div>
+
+            </div>
+        </div>
+
+        <script>
+        // ── Mobile touch → keyboard event bridge ──
+        // We synthesise keyboard events so streetfightergame.js needs zero changes.
+
+        (function () {
+            // Key codes used by the game
+            var KEY = {
+                LEFT:  37,
+                UP:    38,
+                RIGHT: 39,
+                DOWN:  40,
+                Q:     81,   // Light Punch
+                W:     87,   // Medium Punch
+                E:     69,   // Fierce Punch
+                A:     65,   // Light Kick
+                S:     83,   // Medium Kick
+                D:     68    // Hard Kick
+            };
+
+            function fireKey(keyCode, type) {
+                var e = new KeyboardEvent(type, {
+                    bubbles: true,
+                    cancelable: true,
+                    keyCode: keyCode,
+                    which: keyCode
+                });
+                // Phaser 2 reads window keyboard events
+                window.dispatchEvent(e);
+            }
+
+            function holdKey(keyCode) { fireKey(keyCode, 'keydown'); }
+            function releaseKey(keyCode) { fireKey(keyCode, 'keyup'); }
+
+            // Track which keys are currently held via touch
+            var heldKeys = {};
+
+            function press(keyCode) {
+                if (heldKeys[keyCode]) return;
+                heldKeys[keyCode] = true;
+                holdKey(keyCode);
+            }
+
+            function release(keyCode) {
+                if (!heldKeys[keyCode]) return;
+                heldKeys[keyCode] = false;
+                releaseKey(keyCode);
+            }
+
+            // Button → keyCode map
+            var btnMap = {
+                'btn-left':     KEY.LEFT,
+                'btn-right':    KEY.RIGHT,
+                'btn-up':       KEY.UP,
+                'btn-down':     KEY.DOWN,
+                'btn-lp':       KEY.Q,
+                'btn-mp':       KEY.W,
+                'btn-fp':       KEY.E,
+                'btn-lk':       KEY.A,
+                'btn-mk':       KEY.S,
+                'btn-hk':       KEY.D
+            };
+
+            // Visual feedback helper
+            function setActive(el, on) {
+                if (!el) return;
+                if (on) el.classList.add('active');
+                else    el.classList.remove('active');
+            }
+
+            // Bind a button element for hold-style input (movement / attack)
+            function bindHoldButton(id, keyCode) {
+                var el = document.getElementById(id);
+                if (!el) return;
+
+                function start(e) {
+                    e.preventDefault();
+                    press(keyCode);
+                    setActive(el, true);
+                }
+                function end(e) {
+                    e.preventDefault();
+                    release(keyCode);
+                    setActive(el, false);
+                }
+
+                el.addEventListener('touchstart',  start, { passive: false });
+                el.addEventListener('touchend',    end,   { passive: false });
+                el.addEventListener('touchcancel', end,   { passive: false });
+                // Mouse fallback for desktop testing
+                el.addEventListener('mousedown', start);
+                el.addEventListener('mouseup',   end);
+                el.addEventListener('mouseleave',end);
+            }
+
+            // Bind a tap-only button (single keydown+keyup pulse, like attack buttons)
+            function bindTapButton(id, keyCode) {
+                var el = document.getElementById(id);
+                if (!el) return;
+
+                function tap(e) {
+                    e.preventDefault();
+                    holdKey(keyCode);
+                    setActive(el, true);
+                    setTimeout(function () {
+                        releaseKey(keyCode);
+                        setActive(el, false);
+                    }, 120);
+                }
+
+                el.addEventListener('touchstart', tap, { passive: false });
+                el.addEventListener('mousedown',  tap);
+            }
+
+            // D-pad: hold style
+            bindHoldButton('btn-left',  KEY.LEFT);
+            bindHoldButton('btn-right', KEY.RIGHT);
+            bindHoldButton('btn-up',    KEY.UP);
+            bindHoldButton('btn-down',  KEY.DOWN);
+
+            // Attack buttons: tap style
+            bindTapButton('btn-lp', KEY.Q);
+            bindTapButton('btn-mp', KEY.W);
+            bindTapButton('btn-fp', KEY.E);
+            bindTapButton('btn-lk', KEY.A);
+            bindTapButton('btn-mk', KEY.S);
+            bindTapButton('btn-hk', KEY.D);
+
+            // ── Hadouken special button ──
+            // Simulates: DOWN → RIGHT → Light Punch (Q)  with tight timing
+            var hadoukenBtn = document.getElementById('btn-hadouken');
+            if (hadoukenBtn) {
+                function doHadouken(e) {
+                    e.preventDefault();
+                    setActive(hadoukenBtn, true);
+
+                    // Step 1: DOWN
+                    holdKey(KEY.DOWN);
+                    setTimeout(function () {
+                        releaseKey(KEY.DOWN);
+
+                        // Step 2: RIGHT
+                        holdKey(KEY.RIGHT);
+                        setTimeout(function () {
+                            releaseKey(KEY.RIGHT);
+
+                            // Step 3: Light Punch
+                            holdKey(KEY.Q);
+                            setTimeout(function () {
+                                releaseKey(KEY.Q);
+                                setActive(hadoukenBtn, false);
+                            }, 80);
+                        }, 60);
+                    }, 60);
+                }
+
+                hadoukenBtn.addEventListener('touchstart', doHadouken, { passive: false });
+                hadoukenBtn.addEventListener('mousedown',  doHadouken);
+            }
+
+            // ── D-pad swipe/drag support ──
+            // Lets players slide their thumb from one direction to another
+            var dpad = document.getElementById('dpad');
+            if (dpad) {
+                var activeDpadKey = null;
+
+                function getDpadKeyFromTouch(touch) {
+                    var rect = dpad.getBoundingClientRect();
+                    var cx = rect.left + rect.width  / 2;
+                    var cy = rect.top  + rect.height / 2;
+                    var dx = touch.clientX - cx;
+                    var dy = touch.clientY - cy;
+                    var deadzone = 10;
+                    if (Math.abs(dx) < deadzone && Math.abs(dy) < deadzone) return null;
+                    if (Math.abs(dx) > Math.abs(dy)) {
+                        return dx > 0 ? KEY.RIGHT : KEY.LEFT;
+                    } else {
+                        return dy > 0 ? KEY.DOWN : KEY.UP;
+                    }
+                }
+
+                dpad.addEventListener('touchstart', function (e) {
+                    e.preventDefault();
+                    var t = e.changedTouches[0];
+                    var k = getDpadKeyFromTouch(t);
+                    if (k) { activeDpadKey = k; press(k); }
+                }, { passive: false });
+
+                dpad.addEventListener('touchmove', function (e) {
+                    e.preventDefault();
+                    var t = e.changedTouches[0];
+                    var k = getDpadKeyFromTouch(t);
+                    if (k !== activeDpadKey) {
+                        if (activeDpadKey) release(activeDpadKey);
+                        activeDpadKey = k;
+                        if (k) press(k);
+                    }
+                }, { passive: false });
+
+                dpad.addEventListener('touchend', function (e) {
+                    e.preventDefault();
+                    if (activeDpadKey) { release(activeDpadKey); activeDpadKey = null; }
+                }, { passive: false });
+
+                dpad.addEventListener('touchcancel', function (e) {
+                    e.preventDefault();
+                    if (activeDpadKey) { release(activeDpadKey); activeDpadKey = null; }
+                }, { passive: false });
+            }
+
+        })();
+        </script>
+    </body>
+</html>
